@@ -30,14 +30,20 @@ function runthis() {
 			/*Add css - Must change this if you want to use your own CSS*/
 			jQuery('<style type="text/css">@import url("http://dl.dropbox.com/u/5045906/imagesbookmarklet/style.css");</style>').appendTo("head");
 						
-			/*Add toggle*/
-			jQuery('body').append('<div id="background-blocker"></div><div id="image-grabber-container"><div id="button-toggle"><span id="close">Close</span><span id="count"></span></div><ul id="list-of-images"></ul></div>');
-			
-			
-			/*Make toggle work*/
-			jQuery("#button-toggle").click(function() {
-				jQuery("#image-grabber-container, #background-blocker").remove();
-			});
+	        /*Add toggle*/
+            jQuery('body').append('<div id="background-blocker"></div><div id="image-grabber-container"><div id="button-toggle"><span id="close">Close</span><span id="download">Download</span><span id="count"></span></div><ul id="list-of-images"></ul></div>');
+
+            /*Close*/
+            jQuery("#close").click(function() {
+                jQuery("#image-grabber-container, #background-blocker").remove();
+            });
+
+            /*Download*/
+            jQuery("#download").click(function() {
+                jQuery('#list-of-images').find('a').each(function() {
+                    SaveToDisk(this.href);
+                });
+            });		
 	
 			/*Find images and add to list*/			
 			jQuery('img').each(function() {
@@ -56,11 +62,10 @@ function runthis() {
 				}			
 			});
 		
-		jQuery('#count').text(numberOfImages);
+		jQuery('#count').text(numberOfImages+ " images found.");
 		
    		}
    
-
 	function addImage( imageToAdd ) {
 		
 				
@@ -69,11 +74,10 @@ function runthis() {
 		
 		if (imageURL === undefined)
 		{
-			console.log(imageToAdd.css('background-image').slice(4,-1));
-			imageURL = imageToAdd.css('background-image').slice(4,-1);
+            return;
 		}
-		
-		var beginLiTag = "<li><a href='";
+	
+		var beginLiTag = "<li><a target='_blank' href='";
 		var endATag = "'>";
 		var beginImageTag = "<img src='";
 		var middleImageTag = "' style='margin-top:";
@@ -84,7 +88,14 @@ function runthis() {
 		
 		var containData = imageURL.indexOf('data:');
 
-			
+        NewImageURL = transform(imageURL);
+		if (NewImageURL != imageURL){
+            var end = getMeta(NewImageURL);
+            imageURL = NewImageURL;
+            imageWidth = end.w;
+            imageHeight = end.h;
+        }
+
 		/*Check whether image big enough*/
 		if(imageWidth > 150 && imageHeight > 200 && containData === -1) {
 			/*Calculate margin to vertically center*/		
@@ -103,6 +114,45 @@ function runthis() {
 		}
 		
 	}
+
+    /* Return origin size of image */
+    function transform( s ) {
+        if (document.URL.indexOf("jugem")>=0){
+            return s.replace('_t','');
+        } else if (document.URL.indexOf("ameblo")>=0){
+            return s.replace(/t022\d+_/,'o');
+        }
+        return s;
+    }
+
+    function getMeta(url){
+        var w; var h;
+        var img = new Image;
+        img.src=url;
+        img.onload=function(){w=this.width; h=this.height;};
+        return {width:w,height:h}    
+    }
+
+    function SaveToDisk(fileURL) {
+        if (!window.ActiveXObject) {
+            var save = document.createElement('a');
+            save.href = fileURL;
+            save.target = '_blank';
+            save.download = fileURL;
+            var evt = document.createEvent('MouseEvents');
+            evt.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0,
+                false, false, false, false, 0, null);
+            save.dispatchEvent(evt);
+            (window.URL || window.webkitURL).revokeObjectURL(save.href);
+        }
+        else if ( !! window.ActiveXObject && document.execCommand){
+            var tmp_window = window.open(fileURL, "_blank");
+            tmp_window.document.close();
+            tmp_window.document.execCommand('SaveAs', true, fileURL);
+            tmp_window.close();
+        }
+    }
+
 	});	
 }
 	
